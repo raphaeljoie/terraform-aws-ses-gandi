@@ -44,3 +44,15 @@ variable "reception_bucket" {
   default     = null
   description = "S3 bucket to keep the message received. Use null value for skipping S3 Bucket storage action"
 }
+
+variable "reception_sns" {
+  type        = string
+  default     = null
+  description = "SNS "
+}
+
+variable "reception_sns_encoding" {
+  type = string
+  default = "Base64"
+  description = ""
+}

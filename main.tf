@@ -82,6 +82,7 @@ resource "gandi_livedns_record" "redirection_mx_record" {
   values = ["10 inbound-smtp.${local.aws_region}.amazonaws.com."]
 }
 
+## Bucket
 resource "aws_s3_bucket" "reception_bucket" {
   count = var.reception_subdomain != null && var.reception_bucket != null ? 1 : 0
   bucket = var.reception_bucket
@@ -111,6 +112,40 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       },
     ]
     Version = "2012-10-17"
+  })
+}
+
+##
+resource "aws_sns_topic" "reception_sns" {
+  count = var.reception_subdomain != null && var.reception_sns != null ? 1 : 0
+  name = var.reception_sns
+}
+
+resource "aws_sns_topic_policy" "reception_sns_policy" {
+  count = var.reception_subdomain != null && var.reception_sns != null ? 1 : 0
+
+  arn = aws_sns_topic.reception_sns[0].arn
+  policy = jsonencode({
+    Statement = [
+      {
+        Action = "SNS:Publish"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceAccount" = data.aws_caller_identity.current.id
+          }
+          StringLike = {
+            "AWS:SourceArn" = "arn:aws:ses:*"
+          }
+        }
+        Effect = "Allow"
+        Principal = {
+          Service = "ses.amazonaws.com"
+        }
+        Resource = aws_sns_topic.reception_sns[0].arn
+        Sid = "stmt1676733667555"
+      },
+    ]
+    Version = "2008-10-17"
   })
 }
 
@@ -146,6 +181,15 @@ resource "aws_ses_receipt_rule" "this" {
     content {
       bucket_name = s3_action.key
       position    = 2
+    }
+  }
+
+  dynamic "sns_action" {
+    for_each = toset(var.reception_sns == null ? [] : [var.reception_sns])
+    content {
+      encoding  = var.reception_sns_encoding
+      position  = 3
+      topic_arn = aws_sns_topic.reception_sns[0].arn
     }
   }
 }
