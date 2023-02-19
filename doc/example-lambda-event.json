@@ -1,0 +1,92 @@
+{
+  "Records": [
+    {
+      "eventSource": "aws:ses",
+      "eventVersion": "1.0",
+      "ses": {
+        "mail": {
+          "timestamp": "2023-02-19T17:37:08.751Z",
+          "source": "first.last@source.com",
+          "messageId": "123456789abcdefghijklmnopqrstuvwxyz",
+          "destination": [
+            "first.last@destination.com"
+          ],
+          "headersTruncated": false,
+          "headers": [
+            {
+              "name": "Return-Path",
+              "value": "<first.last@source.com>"
+            },
+            {
+              "name": "From",
+              "value": "First Last <first.last@source.com>"
+            },
+            {
+              "name": "Date",
+              "value": "Sun, 19 Feb 2023 18:36:56 +0100"
+            },
+            {
+              "name": "Message-ID",
+              "value": "*****"
+            },
+            {
+              "name": "Subject",
+              "value": "Mail subject"
+            },
+            {
+              "name": "To",
+              "value": "first.last@destination.com"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/mixed; boundary=\"000000000000d7ea0e05f510fe25\""
+            },
+            {
+              "name": "Custom-Header",
+              "value": "Added by SES"
+            }
+          ],
+          "commonHeaders": {
+            "returnPath": "first.last@source.com",
+            "from": [
+              "\"First Last\" <first.last@source.com>"
+            ],
+            "date": "Sun, 19 Feb 2023 18:36:56 +0100",
+            "to": [
+              "first.last@destination.com"
+            ],
+            "messageId": "<*****>",
+            "subject": "azer"
+          }
+        },
+        "receipt": {
+          "timestamp": "2023-02-19T17:37:08.751Z",
+          "processingTimeMillis": 855,
+          "recipients": [
+            "first.last@destination.com"
+          ],
+          "spamVerdict": {
+            "status": "PASS"
+          },
+          "virusVerdict": {
+            "status": "PASS"
+          },
+          "spfVerdict": {
+            "status": "PASS"
+          },
+          "dkimVerdict": {
+            "status": "PASS"
+          },
+          "dmarcVerdict": {
+            "status": "PASS"
+          },
+          "action": {
+            "type": "Lambda",
+            "functionArn": "arn:aws:lambda:eu-west-1:**********:function:test",
+            "invocationType": "Event"
+          }
+        }
+      }
+    }
+  ]
+}

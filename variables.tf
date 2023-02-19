@@ -39,6 +39,24 @@ variable "reception_subdomain" {
   description = "Redirect emails from the subdomain (@{reception_subdomain}.{domain}) to SES, and redirect to bucket if configured"
 }
 
+variable "reception_lambda" {
+  type        = string
+  default     = null
+  description = "Name of the lambda function"
+}
+
+variable "reception_lambda_grant_permissions" {
+  type        = bool
+  default     = true
+  description = ""
+}
+
+variable "reception_lambda_attach_policy" {
+  type        = bool
+  default     = true
+  description = ""
+}
+
 variable "reception_bucket" {
   type        = string
   default     = null

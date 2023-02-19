@@ -82,6 +82,59 @@ resource "gandi_livedns_record" "redirection_mx_record" {
   values = ["10 inbound-smtp.${local.aws_region}.amazonaws.com."]
 }
 
+## Lambda
+data "aws_lambda_function" "reception_lambda" {
+  count = var.reception_subdomain != null && var.reception_lambda != null ? 1 : 0
+  function_name = var.reception_lambda
+}
+
+data "aws_iam_role" "reception_lambda_role" {
+  count = var.reception_subdomain != null && var.reception_lambda != null ? 1 : 0
+
+  name = element(split("/", element(split(":", data.aws_lambda_function.reception_lambda[0].role), 5)),2)
+}
+
+resource "aws_lambda_permission" "reception_lambda_permission" {
+  count = var.reception_lambda_grant_permissions && var.reception_subdomain != null && var.reception_lambda != null ? 1 : 0
+
+  action = "lambda:InvokeFunction"
+  function_name = data.aws_lambda_function.reception_lambda[0].function_name
+  principal = "ses.amazonaws.com"
+  source_account = data.aws_caller_identity.current.account_id
+  #source_arn = aws_ses_receipt_rule.this.arn
+}
+
+resource "aws_iam_policy" "reception_lambda_policy" {
+  count = var.reception_subdomain != null && var.reception_lambda != null && var.reception_lambda_attach_policy ? 1 : 0
+
+  name = "AwsLambda${data.aws_lambda_function.reception_lambda[0].function_name}S3Access"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "s3:DeleteObject"
+        ],
+        Resource = [
+          "arn:aws:s3:::${aws_s3_bucket.reception_bucket[0].bucket}",
+          "arn:aws:s3:::${aws_s3_bucket.reception_bucket[0].bucket}/*"
+        ]
+      }],
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "reception_lambda_policy_attachment" {
+  count = var.reception_subdomain != null && var.reception_lambda != null && var.reception_lambda_attach_policy ? 1 : 0
+
+  policy_arn = aws_iam_policy.reception_lambda_policy[0].arn
+  role = data.aws_iam_role.reception_lambda_role[0].name
+}
+
 ## Bucket
 resource "aws_s3_bucket" "reception_bucket" {
   count = var.reception_subdomain != null && var.reception_bucket != null ? 1 : 0
@@ -115,7 +168,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   })
 }
 
-##
+## SNS
 resource "aws_sns_topic" "reception_sns" {
   count = var.reception_subdomain != null && var.reception_sns != null ? 1 : 0
   name = var.reception_sns
@@ -184,11 +237,20 @@ resource "aws_ses_receipt_rule" "this" {
     }
   }
 
+  dynamic "lambda_action" {
+    for_each = toset(var.reception_lambda == null ? [] : [var.reception_lambda])
+    content {
+      function_arn    = data.aws_lambda_function.reception_lambda[0].arn
+      invocation_type = "Event"
+      position        = 3
+    }
+  }
+
   dynamic "sns_action" {
     for_each = toset(var.reception_sns == null ? [] : [var.reception_sns])
     content {
       encoding  = var.reception_sns_encoding
-      position  = 3
+      position  = 4
       topic_arn = aws_sns_topic.reception_sns[0].arn
     }
   }
